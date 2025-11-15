@@ -1,0 +1,36 @@
+repos:
+  -   repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.5.0
+      hooks:
+        -   id: check-merge-conflict
+        -   id: check-yaml
+        -   id: end-of-file-fixer
+            exclude: 'PKGBUILD'
+        -   id: trailing-whitespace
+        -   id: check-yaml
+        -   id: mixed-line-ending
+        -   id: detect-private-key
+        -   id: no-commit-to-branch
+        - id: check-executables-have-shebangs
+  -   repo: https://github.com/tekwizely/pre-commit-golang
+      rev: v1.0.0-rc.4
+      hooks:
+        -   id: go-build-mod
+            alias: build
+        -   id: go-test-mod
+            alias: test
+        -   id: go-vet-mod
+            alias: vet
+        -   id: go-sec-mod
+            alias: sec
+            args: ['-exclude=G204']
+        -   id: go-returns # internally calls go-imports & go-fmt
+            alias: fmt
+            args: [-d=false, -w]
+        -   id: go-lint
+            alias: lint
+        -   id: go-critic
+            alias: critic
+        -   id: golangci-lint-mod
+            alias: ci
+            args: ['-D=deadcode,unused', --fix]
