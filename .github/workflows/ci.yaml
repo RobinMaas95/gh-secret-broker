@@ -1,0 +1,55 @@
+name: Go CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Needed for 'golangci-lint' to report on PRs
+    permissions:
+      contents: read
+      pull-requests: read
+
+    strategy:
+      matrix:
+        go-version: [ '1.25', '1.24' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true # Enables Go's build cache
+
+      - name: Check formatting (gofmt)
+        run: |
+          echo "Checking formatting..."
+          files=$(gofmt -l .)
+          if [[ -n "$files" ]]; then
+            echo "The following files are not formatted. Please run 'gofmt -w .'"
+            echo "$files"
+            exit 1
+          fi
+          echo "All files are correctly formatted."
+
+      - name: Run linter (golangci-lint)
+        uses: golangci/golangci-lint-action@v9
+
+      - name: Run vulnerability scan (govulncheck)
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Run race detector
+        run: go test -race -v ./...
