@@ -1,6 +1,6 @@
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.5.0
+      rev: v6.0.0
       hooks:
         -   id: check-merge-conflict
         -   id: check-yaml
@@ -27,10 +27,10 @@ repos:
         -   id: go-returns # internally calls go-imports & go-fmt
             alias: fmt
             args: [-d=false, -w]
-        -   id: go-lint
+        -   id: golangci-lint
             alias: lint
         -   id: go-critic
             alias: critic
         -   id: golangci-lint-mod
             alias: ci
-            args: ['-D=deadcode,unused', --fix]
+            args: ['-D=unused', --fix]
