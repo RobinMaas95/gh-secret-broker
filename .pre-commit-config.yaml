@@ -27,8 +27,6 @@ repos:
         -   id: go-returns # internally calls go-imports & go-fmt
             alias: fmt
             args: [-d=false, -w]
-        -   id: golangci-lint
-            alias: lint
         -   id: go-critic
             alias: critic
         -   id: golangci-lint-mod
