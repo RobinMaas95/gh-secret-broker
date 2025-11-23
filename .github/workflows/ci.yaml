@@ -60,6 +60,9 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Debug FS
+        run: ls -R ui
+
       - name: Run tests
         run: go test -v ./...
 
