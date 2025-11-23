@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/RobinMaas95/gh-secret-broker/internal/config"
+	"github.com/RobinMaas95/gh-secret-broker/ui"
 	"github.com/joho/godotenv"
 )
 
@@ -71,7 +73,12 @@ func main() {
 	slog.SetDefault(logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", getRoot)
+	distFS, err := fs.Sub(ui.Files, "dist")
+	if err != nil {
+		logger.Error("Could not get dist files", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	mux.Handle("GET /", http.FileServer(http.FS(distFS)))
 
 	srv := &http.Server{
 		Addr:         cfg.Addr,
