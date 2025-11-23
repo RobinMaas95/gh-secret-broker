@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/RobinMaas95/gh-secret-broker/internal/config"
+	"github.com/joho/godotenv"
 )
 
 var logHandler slog.Handler
@@ -48,8 +49,10 @@ func readEnvs() {
 
 func main() {
 	logFormat := "text"
+	_ = godotenv.Load() // Load .env file if it exists
 	cfg, err := config.Load()
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println("Could not load config")
 		os.Exit(1)
 	}

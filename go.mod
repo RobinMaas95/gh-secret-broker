@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/sqs/goreturns v0.0.0-20231030191505-16fc3d8edd91 // indirect
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
