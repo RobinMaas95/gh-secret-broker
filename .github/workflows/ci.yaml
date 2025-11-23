@@ -39,6 +39,7 @@ jobs:
           cd ui
           npm ci
           npm run build
+          ls -R dist
 
       - name: Check formatting (gofmt)
         run: |
