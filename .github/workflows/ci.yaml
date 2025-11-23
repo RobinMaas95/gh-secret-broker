@@ -29,6 +29,17 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true # Enables Go's build cache
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Build Frontend
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
       - name: Check formatting (gofmt)
         run: |
           echo "Checking formatting..."
