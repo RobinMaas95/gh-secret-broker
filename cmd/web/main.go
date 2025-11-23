@@ -10,14 +10,11 @@ import (
 	"os"
 	"slices"
 	"time"
+
+	"github.com/RobinMaas95/gh-secret-broker/internal/config"
 )
 
 var logHandler slog.Handler
-
-type config struct {
-	addr string
-	// staticDir string
-}
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
@@ -46,10 +43,17 @@ func setupLogger(logFormat string) slog.Handler {
 	return logHandler
 }
 
+func readEnvs() {
+}
+
 func main() {
 	logFormat := "text"
-	var cfg config
-	flag.StringVar(&cfg.addr, "addr", ":4000", "HTTP network address")
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Println("Could not load config")
+		os.Exit(1)
+	}
+	flag.StringVar(&cfg.Addr, "addr", ":4000", "HTTP network address")
 	flag.Func("log-format", "Output format of the logs", func(flagValue string) error {
 		if slices.Contains([]string{"text", "json"}, flagValue) {
 			logFormat = flagValue
@@ -67,7 +71,7 @@ func main() {
 	mux.HandleFunc("GET /", getRoot)
 
 	srv := &http.Server{
-		Addr:         cfg.addr,
+		Addr:         cfg.Addr,
 		Handler:      mux,
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		IdleTimeout:  time.Minute,
@@ -76,7 +80,7 @@ func main() {
 	}
 
 	logger.Info("Starting server", slog.String("addr", srv.Addr))
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }
