@@ -54,8 +54,9 @@ jobs:
 
       - name: Install and run golangci-lint
         run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
           golangci-lint run ./...
+          ls -R ui/dist
 
       - name: Run vulnerability scan (govulncheck)
         uses: golang/govulncheck-action@v1
