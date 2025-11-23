@@ -46,9 +46,6 @@ func setupLogger(logFormat string) slog.Handler {
 	return logHandler
 }
 
-func readEnvs() {
-}
-
 func main() {
 	logFormat := "text"
 	_ = godotenv.Load() // Load .env file if it exists
