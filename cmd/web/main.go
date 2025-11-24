@@ -5,19 +5,19 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
 	"slices"
 	"time"
+
+	"github.com/RobinMaas95/gh-secret-broker/internal/config"
+	"github.com/RobinMaas95/gh-secret-broker/ui"
+	"github.com/joho/godotenv"
 )
 
 var logHandler slog.Handler
-
-type config struct {
-	addr string
-	// staticDir string
-}
 
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got / request\n")
@@ -48,8 +48,14 @@ func setupLogger(logFormat string) slog.Handler {
 
 func main() {
 	logFormat := "text"
-	var cfg config
-	flag.StringVar(&cfg.addr, "addr", ":4000", "HTTP network address")
+	_ = godotenv.Load() // Load .env file if it exists
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("Could not load config")
+		os.Exit(1)
+	}
+	flag.StringVar(&cfg.Addr, "addr", ":4000", "HTTP network address")
 	flag.Func("log-format", "Output format of the logs", func(flagValue string) error {
 		if slices.Contains([]string{"text", "json"}, flagValue) {
 			logFormat = flagValue
@@ -64,10 +70,15 @@ func main() {
 	slog.SetDefault(logger)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", getRoot)
+	distFS, err := fs.Sub(ui.Files, "dist")
+	if err != nil {
+		logger.Error("Could not get dist files", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	mux.Handle("GET /", http.FileServer(http.FS(distFS)))
 
 	srv := &http.Server{
-		Addr:         cfg.addr,
+		Addr:         cfg.Addr,
 		Handler:      mux,
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		IdleTimeout:  time.Minute,
@@ -76,7 +87,7 @@ func main() {
 	}
 
 	logger.Info("Starting server", slog.String("addr", srv.Addr))
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }
