@@ -40,6 +40,10 @@ func NewService(logger *slog.Logger, cfg *config.Config) *Service {
 
 	gothic.Store = store
 
+	gothic.GetProviderName = func(req *http.Request) (string, error) {
+		return req.PathValue("provider"), nil
+	}
+
 	goth.UseProviders(
 		github.New(cfg.GithubClientID, cfg.GithubClientSecret, cfg.BaseURL+"/auth/github/callback", "user:email"),
 	)

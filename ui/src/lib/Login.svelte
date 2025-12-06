@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { untrack } from "svelte";
+  import * as Card from "$lib/components/ui/card";
+  import { Button } from "$lib/components/ui/button";
 
   interface ProvidersResponse {
     Providers: string[];
@@ -12,9 +14,9 @@
   async function loadProviders() {
     error = null;
     try {
-      const res = await fetch('/api/providers');
+      const res = await fetch("/api/providers");
       if (!res.ok) {
-        throw new Error('Failed to load providers');
+        throw new Error("Failed to load providers");
       }
       providers = await res.json();
     } catch (e) {
@@ -29,40 +31,33 @@
   });
 </script>
 
-<div class="container">
-  <h1>GH Secret Broker</h1>
-  <div class="card">
-    {#if error}
-      <p class="error">{error}</p>
-      <button onclick={() => loadProviders()}>Retry</button>
-    {:else if providers}
-      {#each providers.Providers as provider (provider)}
-        <p><a href="/auth/{provider}">Log in with {providers.ProvidersMap[provider]}</a></p>
-      {/each}
-    {:else}
-      <p>Loading providers...</p>
-    {/if}
-  </div>
+<div class="flex min-h-screen items-center justify-center p-4">
+  <Card.Root class="w-full max-w-md">
+    <Card.Header>
+      <Card.Title class="text-2xl font-bold text-center"
+        >GH Secret Broker</Card.Title
+      >
+      <Card.Description class="text-center">
+        Login with your GitHub account to manage secrets.
+      </Card.Description>
+    </Card.Header>
+    <Card.Content class="grid gap-4">
+      {#if error}
+        <div class="text-destructive text-center text-sm">{error}</div>
+        <Button variant="outline" onclick={() => loadProviders()}>Retry</Button>
+      {:else if providers}
+        <div class="grid gap-2">
+          {#each providers.Providers as provider (provider)}
+            <Button variant="outline" href="/auth/{provider}" class="w-full">
+              Log in with {providers.ProvidersMap[provider]}
+            </Button>
+          {/each}
+        </div>
+      {:else}
+        <div class="text-center text-muted-foreground">
+          Loading providers...
+        </div>
+      {/if}
+    </Card.Content>
+  </Card.Root>
 </div>
-
-<style>
-  .container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 2rem;
-    text-align: center;
-  }
-  h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
-  }
-  .card {
-    padding: 2em;
-    background-color: #1a1a1a;
-    border-radius: 8px;
-    margin-top: 1em;
-  }
-  .error {
-    color: red;
-  }
-</style>

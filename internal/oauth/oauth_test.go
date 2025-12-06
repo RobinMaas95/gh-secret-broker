@@ -79,6 +79,7 @@ func TestProviderLogin_NoUser(t *testing.T) {
 
 	handler := http.HandlerFunc(svc.ProviderLogin)
 	req, err := http.NewRequest(http.MethodGet, "/auth/github?provider=github", nil)
+	req.SetPathValue("provider", "github")
 	if err != nil {
 		t.Fatal(err)
 	}

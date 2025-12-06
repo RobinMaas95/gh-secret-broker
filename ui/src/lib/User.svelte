@@ -1,5 +1,10 @@
 <script lang="ts">
     import { untrack } from "svelte";
+    import * as Card from "$lib/components/ui/card";
+    import * as Avatar from "$lib/components/ui/avatar";
+    import { Button } from "$lib/components/ui/button";
+    import { Label } from "$lib/components/ui/label";
+    import { Separator } from "$lib/components/ui/separator";
 
     interface User {
         AvatarURL: string;
@@ -34,90 +39,69 @@
     });
 </script>
 
-<div class="container">
-    <h1>User Profile</h1>
-    <div class="card">
+<div class="flex min-h-screen items-center justify-center p-4">
+    <Card.Root class="w-full max-w-lg">
         {#if error}
-            <p class="error">{error}</p>
-            <p><a href="/">Go back to login</a></p>
-        {:else if user}
-            <div class="profile-header">
-                <img src={user.AvatarURL} class="avatar" alt="Avatar" />
-                <div>
-                    <h2>{user.Name}</h2>
-                    <p>{user.NickName}</p>
+            <Card.Content class="pt-6">
+                <div class="text-destructive text-center mb-4">{error}</div>
+                <div class="text-center">
+                    <Button variant="link" href="/">Go back to login</Button>
                 </div>
-            </div>
-
-            <div class="info-grid">
-                <div class="label">Email:</div>
-                <div>{user.Email}</div>
-                <div class="label">Location:</div>
-                <div>{user.Location}</div>
-                <div class="label">Description:</div>
-                <div>{user.Description}</div>
-                <div class="label">UserID:</div>
-                <div>{user.UserID}</div>
-            </div>
-
-            <div class="logout-link">
-                <a href="/logout/{user.Provider}">Logout</a>
-            </div>
+            </Card.Content>
+        {:else if user}
+            <Card.Header class="flex flex-row items-center gap-4">
+                <Avatar.Root class="h-20 w-20">
+                    <Avatar.Image src={user.AvatarURL} alt={user.Name} />
+                    <Avatar.Fallback
+                        >{user.Name.slice(0, 2).toUpperCase()}</Avatar.Fallback
+                    >
+                </Avatar.Root>
+                <div class="flex flex-col gap-1">
+                    <Card.Title class="text-2xl">{user.Name}</Card.Title>
+                    <Card.Description>@{user.NickName}</Card.Description>
+                </div>
+            </Card.Header>
+            <Separator />
+            <Card.Content class="grid gap-4 py-6">
+                <div class="grid grid-cols-[100px_1fr] items-center gap-4">
+                    <Label class="text-right text-muted-foreground">Email</Label
+                    >
+                    <div class="font-medium">{user.Email}</div>
+                </div>
+                <div class="grid grid-cols-[100px_1fr] items-center gap-4">
+                    <Label class="text-right text-muted-foreground"
+                        >Location</Label
+                    >
+                    <div class="font-medium">
+                        {user.Location || "Not specified"}
+                    </div>
+                </div>
+                <div class="grid grid-cols-[100px_1fr] items-start gap-4">
+                    <Label class="text-right text-muted-foreground pt-1"
+                        >Bio</Label
+                    >
+                    <div class="font-medium">
+                        {user.Description || "No bio"}
+                    </div>
+                </div>
+                <div class="grid grid-cols-[100px_1fr] items-center gap-4">
+                    <Label class="text-right text-muted-foreground"
+                        >User ID</Label
+                    >
+                    <div class="font-mono text-xs text-muted-foreground">
+                        {user.UserID}
+                    </div>
+                </div>
+            </Card.Content>
+            <Card.Footer class="justify-center">
+                <Button variant="destructive" href="/logout/{user.Provider}"
+                    >Logout</Button
+                >
+            </Card.Footer>
         {:else}
-            <p>Loading profile...</p>
+            <Card.Content class="pt-6 text-center text-muted-foreground">
+                Loading profile...
+            </Card.Content>
         {/if}
-    </div>
+    </Card.Root>
 </div>
-
-<style>
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-    h1 {
-        font-size: 2.5em;
-        line-height: 1.1;
-        text-align: center;
-    }
-    .card {
-        padding: 2em;
-        background-color: #1a1a1a;
-        border-radius: 8px;
-        margin-top: 1em;
-        display: flex;
-        flex-direction: column;
-        gap: 1em;
-    }
-    .profile-header {
-        display: flex;
-        align-items: center;
-        gap: 1em;
-        border-bottom: 1px solid #333;
-        padding-bottom: 1em;
-        margin-bottom: 1em;
-    }
-    .avatar {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-    .info-grid {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.5em 1em;
-    }
-    .label {
-        font-weight: bold;
-        color: #aaa;
-    }
-    .logout-link {
-        text-align: center;
-        margin-top: 2em;
-    }
-    .error {
-        color: red;
-        text-align: center;
-    }
-</style>
