@@ -29,16 +29,23 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: true # Enables Go's build cache
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: ui/pnpm-lock.yaml
 
       - name: Build Frontend
         run: |
           cd ui
-          npm ci
-          npm run build
+          pnpm install --frozen-lockfile
+          pnpm run build
           ls -R dist
 
       - name: Check formatting (gofmt)
