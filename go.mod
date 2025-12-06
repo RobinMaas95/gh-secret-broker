@@ -1,6 +1,6 @@
 module github.com/RobinMaas95/gh-secret-broker
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/gorilla/sessions v1.1.1
