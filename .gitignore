@@ -30,4 +30,20 @@ go.work.sum
 # Editor/IDE
 build
 .vscode/
-tmp/build-errors.log
+tmp/
+.lovely-docs/
+.agent/
+
+# Mac
+.DS_Store
+
+# Node / Frontend
+node_modules/
+ui/node_modules/
+dist/
+ui/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
