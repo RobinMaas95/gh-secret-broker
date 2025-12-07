@@ -27,6 +27,7 @@ func (app *application) routes(oauthService *oauth.Service) http.Handler {
 
 	mux.HandleFunc("GET /api/providers", oauthService.HandleProvidersAPI)
 	mux.HandleFunc("GET /api/me", oauthService.HandleUserAPI)
+	mux.Handle("GET /api/repositories", dynamic.ThenFunc(app.handleListRepositories))
 
 	// Serve index.html for /userpage to support SPA history mode (if used)
 	mux.HandleFunc("GET /userpage", func(w http.ResponseWriter, r *http.Request) {

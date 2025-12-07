@@ -18,6 +18,7 @@ func TestConfig_Load(t *testing.T) {
 			envs: map[string]string{
 				"GITHUB_CLIENT_ID":     "test-client-id",
 				"GITHUB_CLIENT_SECRET": "test-client-secret",
+				"GITHUB_ORG":           "test-org",
 			},
 			wantErr: false,
 		},
@@ -28,6 +29,7 @@ func TestConfig_Load(t *testing.T) {
 				"GITHUB_CLIENT_SECRET": "test-client-secret",
 				"SESSION_SECRET":       "this-is-a-very-long-session-secret-key",
 				"ENVIRONMENT":          "production",
+				"GITHUB_ORG":           "test-org",
 			},
 			wantErr: false,
 		},
@@ -35,6 +37,7 @@ func TestConfig_Load(t *testing.T) {
 			name: "Missing client ID",
 			envs: map[string]string{
 				"GITHUB_CLIENT_SECRET": "test-client-secret",
+				"GITHUB_ORG":           "test-org",
 			},
 			wantErr:     true,
 			errContains: "GITHUB_CLIENT_ID",
@@ -43,6 +46,7 @@ func TestConfig_Load(t *testing.T) {
 			name: "Missing client secret",
 			envs: map[string]string{
 				"GITHUB_CLIENT_ID": "test-client-id",
+				"GITHUB_ORG":       "test-org",
 			},
 			wantErr:     true,
 			errContains: "GITHUB_CLIENT_SECRET",
@@ -59,6 +63,7 @@ func TestConfig_Load(t *testing.T) {
 				"GITHUB_CLIENT_ID":     "test-client-id",
 				"GITHUB_CLIENT_SECRET": "test-client-secret",
 				"ENVIRONMENT":          "production",
+				"GITHUB_ORG":           "test-org",
 			},
 			wantErr:     true,
 			errContains: "SESSION_SECRET is required",
@@ -69,6 +74,7 @@ func TestConfig_Load(t *testing.T) {
 				"GITHUB_CLIENT_ID":     "test-client-id",
 				"GITHUB_CLIENT_SECRET": "test-client-secret",
 				"SESSION_SECRET":       "short",
+				"GITHUB_ORG":           "test-org",
 			},
 			wantErr:     true,
 			errContains: "at least 32 characters",
@@ -84,6 +90,7 @@ func TestConfig_Load(t *testing.T) {
 				"SESSION_SECRET",
 				"ENVIRONMENT",
 				"BASE_URL",
+				"GITHUB_ORG",
 			}
 			originalEnvs := make(map[string]string)
 			for _, key := range envKeys {

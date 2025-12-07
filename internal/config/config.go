@@ -16,6 +16,7 @@ type Config struct {
 	SessionSecret      string
 	GithubClientID     string
 	GithubClientSecret string
+	GithubOrg          string
 }
 
 // IsProduction returns true if running in production environment
@@ -58,6 +59,7 @@ func Load() (*Config, error) {
 		SessionSecret:      sessionSecret,
 		GithubClientID:     getEnv("GITHUB_CLIENT_ID"),
 		GithubClientSecret: getEnv("GITHUB_CLIENT_SECRET"),
+		GithubOrg:          getEnv("GITHUB_ORG"),
 	}
 
 	if len(errs) > 0 {

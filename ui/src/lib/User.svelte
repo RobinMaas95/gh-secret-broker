@@ -5,6 +5,7 @@
     import { Button } from "$lib/components/ui/button";
     import { Label } from "$lib/components/ui/label";
     import { Separator } from "$lib/components/ui/separator";
+    import RepositoryList from "$lib/components/RepositoryList.svelte";
 
     interface User {
         AvatarURL: string;
@@ -39,7 +40,7 @@
     });
 </script>
 
-<div class="flex min-h-screen items-center justify-center p-4">
+<div class="flex flex-col min-h-screen items-center justify-center p-4 gap-4">
     <Card.Root class="w-full max-w-lg">
         {#if error}
             <Card.Content class="pt-6">
@@ -104,4 +105,6 @@
             </Card.Content>
         {/if}
     </Card.Root>
+
+    <RepositoryList />
 </div>
