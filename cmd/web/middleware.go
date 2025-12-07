@@ -50,7 +50,7 @@ func (app *application) logRequest(next http.Handler) http.Handler {
 
 func (app *application) commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' avatars.githubusercontent.com")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'sha256-OWM7eqRFZQb+Ir51EYZz6GAUUG4Oy2fNwCWX0peasbE=' fonts.googleapis.com; script-src 'self' 'unsafe-eval'; font-src fonts.gstatic.com; img-src 'self' avatars.githubusercontent.com")
 		w.Header().Set("Referrer-Policy", "origin-when-cross-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "deny")

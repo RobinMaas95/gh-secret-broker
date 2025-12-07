@@ -16,12 +16,15 @@ import (
 
 	"github.com/RobinMaas95/gh-secret-broker/internal/config"
 	"github.com/RobinMaas95/gh-secret-broker/internal/oauth"
+	"github.com/RobinMaas95/gh-secret-broker/internal/repository"
 	"github.com/joho/godotenv"
 )
 
 type application struct {
-	logger    *slog.Logger
-	debugMode bool
+	logger       *slog.Logger
+	debugMode    bool
+	repositories *repository.Service
+	config       *config.Config
 }
 
 func setupLogger(logFormat string) slog.Handler {
@@ -80,8 +83,10 @@ func main() {
 	slog.SetDefault(logger)
 
 	app := &application{
-		logger:    logger,
-		debugMode: false,
+		logger:       logger,
+		debugMode:    false,
+		repositories: repository.NewService(),
+		config:       cfg,
 	}
 
 	oauthService := oauth.NewService(logger, cfg)

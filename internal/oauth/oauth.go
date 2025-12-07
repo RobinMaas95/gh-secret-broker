@@ -79,7 +79,7 @@ func (s *Service) ProviderLogin(res http.ResponseWriter, req *http.Request) {
 	if session != nil {
 		if _, ok := session.Values["user"]; ok {
 			// User is already logged in, redirect to user page
-			http.Redirect(res, req, "/#/userpage", http.StatusTemporaryRedirect)
+			http.Redirect(res, req, "/#/dashboard", http.StatusTemporaryRedirect)
 			return
 		}
 	}
@@ -138,7 +138,7 @@ func (s *Service) HandleCallback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Redirect to the user page after successful login
-	http.Redirect(res, req, "/#/userpage", http.StatusTemporaryRedirect)
+	http.Redirect(res, req, "/#/dashboard", http.StatusTemporaryRedirect)
 }
 
 /*
