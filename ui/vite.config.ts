@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import path from "path";
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
@@ -12,8 +13,22 @@ export default defineConfig({
       "@": path.resolve(process.cwd(), "./src"),
       "$lib": path.resolve(process.cwd(), "./src/lib"),
     },
+    conditions: ['browser'],
   },
   build: {
     outDir: "./dist/"
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.ts'],
+    alias: {
+      "$lib": path.resolve(process.cwd(), "./src/lib"),
+    },
+    server: {
+      deps: {
+        inline: ['@testing-library/svelte']
+      }
+    },
   }
 })

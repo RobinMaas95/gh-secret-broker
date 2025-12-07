@@ -126,8 +126,8 @@ func TestProviderLogin_UserLoggedIn(t *testing.T) {
 	if w.Code != http.StatusTemporaryRedirect {
 		t.Errorf("Expected redirect (307), got %d", w.Code)
 	}
-	if loc := w.Header().Get("Location"); loc != "/#/userpage" {
-		t.Errorf("Expected redirect to /#/userpage, got %s", loc)
+	if loc := w.Header().Get("Location"); loc != "/#/dashboard" {
+		t.Errorf("Expected redirect to /#/dashboard, got %s", loc)
 	}
 }
 

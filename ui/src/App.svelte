@@ -1,15 +1,18 @@
 <script lang="ts">
   import { ModeWatcher } from "mode-watcher";
   import Login from "./lib/Login.svelte";
-  import User from "./lib/User.svelte";
-  import ModeToggle from "$lib/components/ModeToggle.svelte";
+  import User from "./lib/User.svelte"; // This is now the Dashboard
+  import Profile from "./lib/Profile.svelte";
+  import Header from "$lib/components/Header.svelte";
 
-  let page = $state<"login" | "user">("login");
+  let page = $state<"login" | "dashboard" | "profile">("login");
 
   function handleHashChange() {
     const hash = window.location.hash;
-    if (hash === "#/userpage") {
-      page = "user";
+    if (hash === "#/dashboard") {
+      page = "dashboard";
+    } else if (hash === "#/profile") {
+      page = "profile";
     } else {
       page = "login";
     }
@@ -22,17 +25,18 @@
 <ModeWatcher />
 <svelte:window onhashchange={handleHashChange} />
 
-<div class="absolute right-4 top-4">
-  <ModeToggle />
+<div class="min-h-screen bg-background">
+  <Header />
+  <main>
+    {#if page === "login"}
+      <Login />
+    {:else if page === "dashboard"}
+      <User />
+    {:else if page === "profile"}
+      <Profile />
+    {/if}
+  </main>
 </div>
-
-<main>
-  {#if page === "login"}
-    <Login />
-  {:else if page === "user"}
-    <User />
-  {/if}
-</main>
 
 <style>
 </style>

@@ -18,7 +18,7 @@
 
     onMount(async () => {
         try {
-            const res = await fetch("/api/repositories");
+            const res = await fetch("/api/user/repos");
             if (!res.ok) {
                 throw new Error("Failed to fetch repositories");
             }
@@ -35,7 +35,7 @@
     }
 </script>
 
-<Card.Root class="w-full max-w-lg mt-4">
+<Card.Root class="w-full mt-4">
     <Card.Header>
         <Card.Title>Repositories</Card.Title>
         <Card.Description
@@ -72,14 +72,12 @@
                                     >
                                 {/if}
                             </span>
-                            <span class="text-xs text-muted-foreground truncate"
+                            <span
+                                class="text-xs text-muted-foreground break-words"
                                 >{repo.description || "No description"}</span
                             >
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            class="opacity-0 group-hover:opacity-100 transition-opacity"
+                        <Button variant="accent" size="sm" class=""
                             >Manage</Button
                         >
                     </div>
