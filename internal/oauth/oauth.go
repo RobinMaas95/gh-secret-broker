@@ -138,7 +138,7 @@ func (s *Service) HandleCallback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Redirect to the user page after successful login
-	http.Redirect(res, req, "/#/userpage", http.StatusTemporaryRedirect)
+	http.Redirect(res, req, "/#/dashboard", http.StatusTemporaryRedirect)
 }
 
 /*
