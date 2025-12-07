@@ -1,31 +1,27 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"slices"
+	"syscall"
 	"time"
 
 	"github.com/RobinMaas95/gh-secret-broker/internal/config"
-	"github.com/RobinMaas95/gh-secret-broker/ui"
+	"github.com/RobinMaas95/gh-secret-broker/internal/oauth"
 	"github.com/joho/godotenv"
 )
 
-var logHandler slog.Handler
-
-func getRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got / request\n")
-	_, err := io.WriteString(w, "This is my website!\n")
-	if err != nil {
-		fmt.Println("Could not write to stream")
-		os.Exit(1)
-	}
+type application struct {
+	logger    *slog.Logger
+	debugMode bool
 }
 
 func setupLogger(logFormat string) slog.Handler {
@@ -34,21 +30,21 @@ func setupLogger(logFormat string) slog.Handler {
 	}
 	switch logFormat {
 	case "json":
-		logHandler = slog.NewJSONHandler(os.Stdout, opts)
+		return slog.NewJSONHandler(os.Stdout, opts)
 	case "text":
 		opts.AddSource = true
-		logHandler = slog.NewTextHandler(os.Stdout, opts)
+		return slog.NewTextHandler(os.Stdout, opts)
 	default:
 		// Should never be reached because we validate the user input
 		opts.AddSource = true
-		logHandler = slog.NewTextHandler(os.Stdout, opts)
+		return slog.NewTextHandler(os.Stdout, opts)
 	}
-	return logHandler
 }
 
 func main() {
-	logFormat := "text"
 	_ = godotenv.Load() // Load .env file if it exists
+
+	logFormat := "text"
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Println(err)
@@ -66,28 +62,64 @@ func main() {
 	flag.Parse() // Need to be called, so that the flag values are filled with passed values and not defaults
 	fmt.Printf("The log format is: %s\n", logFormat)
 
+	if cfg.BaseURL == "" {
+		_, port, err := net.SplitHostPort(cfg.Addr)
+		if err != nil {
+			// If SplitHostPort fails (e.g. ":4000"), try to see if it's just a port or fallback
+			if len(cfg.Addr) > 0 && cfg.Addr[0] == ':' {
+				port = cfg.Addr[1:]
+			} else {
+				// Fallback: assume the whole thing is a port if it parses as int, otherwise default to 4000
+				port = "4000" // Safe default
+			}
+		}
+		cfg.BaseURL = "http://localhost:" + port
+	}
+
 	logger := slog.New(setupLogger(logFormat))
 	slog.SetDefault(logger)
 
-	mux := http.NewServeMux()
-	distFS, err := fs.Sub(ui.Files, "dist")
-	if err != nil {
-		logger.Error("Could not get dist files", slog.String("error", err.Error()))
-		os.Exit(1)
+	app := &application{
+		logger:    logger,
+		debugMode: false,
 	}
-	mux.Handle("GET /", http.FileServer(http.FS(distFS)))
+
+	oauthService := oauth.NewService(logger, cfg)
 
 	srv := &http.Server{
 		Addr:         cfg.Addr,
-		Handler:      mux,
+		Handler:      app.routes(oauthService),
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
+	// Graceful shutdown setup
+	shutdownComplete := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
+		<-sigint
+
+		logger.Info("Shutting down server...")
+
+		// Give outstanding requests 30 seconds to complete
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Error("Server shutdown error", slog.String("error", err.Error()))
+		}
+		close(shutdownComplete)
+	}()
+
 	logger.Info("Starting server", slog.String("addr", srv.Addr))
-	err = srv.ListenAndServe()
-	logger.Error(err.Error())
-	os.Exit(1)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		logger.Error("Server error", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	<-shutdownComplete
+	logger.Info("Server stopped gracefully")
 }
