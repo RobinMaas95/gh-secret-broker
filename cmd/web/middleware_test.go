@@ -99,22 +99,27 @@ func TestPreventCSRF(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	wrapped := preventCSRF(handler)
+	// Test both development and production modes
+	for _, isProduction := range []bool{false, true} {
+		wrapped := preventCSRFFactory(isProduction)(handler)
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		w := httptest.NewRecorder()
+		wrapped.ServeHTTP(w, req)
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-	wrapped.ServeHTTP(w, req)
-
-	// CSRF middleware sets cookie on first request
-	cookies := w.Result().Cookies()
-	csrfFound := false
-	for _, cookie := range cookies {
-		if cookie.Name == "csrf_token" {
-			csrfFound = true
-			break
+		// CSRF middleware sets cookie on first request
+		cookies := w.Result().Cookies()
+		csrfFound := false
+		for _, cookie := range cookies {
+			if cookie.Name == "csrf_token" {
+				csrfFound = true
+				if cookie.Secure != isProduction {
+					t.Errorf("Expected Secure=%v for isProduction=%v, got %v", isProduction, isProduction, cookie.Secure)
+				}
+				break
+			}
 		}
-	}
-	if !csrfFound {
-		t.Error("Expected CSRF cookie")
+		if !csrfFound {
+			t.Error("Expected CSRF cookie")
+		}
 	}
 }
