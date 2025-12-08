@@ -3,10 +3,16 @@ package main
 import (
 	"bytes"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
+
+func setupTestLogger() *slog.Logger {
+	return slog.New(slog.NewTextHandler(os.Stdout, nil))
+}
 
 type testServer struct {
 	*httptest.Server

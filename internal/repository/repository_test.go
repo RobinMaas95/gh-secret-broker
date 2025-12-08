@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/RobinMaas95/gh-secret-broker/internal/repository"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v80/github"
 )
 
 func TestListUserRepositories(t *testing.T) {
@@ -27,9 +27,9 @@ func TestListUserRepositories(t *testing.T) {
 		// Mock response
 		repos := []*github.Repository{
 			{
-				Name: github.String("repo-1"),
+				Name: github.Ptr("repo-1"),
 				Owner: &github.User{
-					Login: github.String("TargetOrg"),
+					Login: github.Ptr("TargetOrg"),
 				},
 				Permissions: map[string]bool{
 					"admin":    true,
@@ -37,18 +37,18 @@ func TestListUserRepositories(t *testing.T) {
 				},
 			},
 			{
-				Name: github.String("repo-2"),
+				Name: github.Ptr("repo-2"),
 				Owner: &github.User{
-					Login: github.String("OtherOrg"),
+					Login: github.Ptr("OtherOrg"),
 				},
 				Permissions: map[string]bool{
 					"admin": true,
 				},
 			},
 			{
-				Name: github.String("repo-3"),
+				Name: github.Ptr("repo-3"),
 				Owner: &github.User{
-					Login: github.String("TargetOrg"),
+					Login: github.Ptr("TargetOrg"),
 				},
 				Permissions: map[string]bool{
 					"admin":    false,
@@ -86,5 +86,89 @@ func TestListUserRepositories(t *testing.T) {
 
 	if repos[0].GetName() != "repo-1" {
 		t.Errorf("expected repo-1, got %s", repos[0].GetName())
+	}
+}
+
+func TestListSecrets(t *testing.T) {
+	// Setup mock server
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	// Define fake GitHub server, we will call this in our test
+	mux.HandleFunc("/repos/TargetOrg/repo-1/actions/secrets", func(w http.ResponseWriter, r *http.Request) {
+		response := &github.Secrets{
+			TotalCount: 2,
+			Secrets: []*github.Secret{
+				{Name: "SECRET_ONE"},
+				{Name: "SECRET_TWO"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(response)
+	})
+
+	// Setup client
+	client := github.NewClient(nil)
+	// Overwriting target (GitHub server) url, so that our fake server is used
+	client.BaseURL, _ = client.BaseURL.Parse(server.URL + "/")
+
+	service := repository.NewService()
+	secrets, err := service.ListSecrets(context.Background(), client, "TargetOrg", "repo-1")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(secrets) != 2 {
+		t.Errorf("expected 2 secrets, got %d", len(secrets))
+	}
+
+	expected := []string{"SECRET_ONE", "SECRET_TWO"}
+	for i, s := range secrets {
+		if s != expected[i] {
+			t.Errorf("expected secret %s, got %s", expected[i], s)
+		}
+	}
+}
+
+func TestHasMaintainerAccess(t *testing.T) {
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	mux.HandleFunc("/repos/TargetOrg/repo-1", func(w http.ResponseWriter, r *http.Request) {
+		repo := &github.Repository{
+			Permissions: map[string]bool{"admin": true},
+		}
+		_ = json.NewEncoder(w).Encode(repo)
+	})
+
+	mux.HandleFunc("/repos/TargetOrg/repo-2", func(w http.ResponseWriter, r *http.Request) {
+		repo := &github.Repository{
+			Permissions: map[string]bool{"pull": true}, // No admin/maintain
+		}
+		_ = json.NewEncoder(w).Encode(repo)
+	})
+
+	client := github.NewClient(nil)
+	client.BaseURL, _ = client.BaseURL.Parse(server.URL + "/")
+	service := repository.NewService()
+
+	// Case 1: Has Access
+	hasAccess, err := service.HasMaintainerAccess(context.Background(), client, "TargetOrg", "repo-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !hasAccess {
+		t.Error("expected access, got denied")
+	}
+
+	// Case 2: No Access
+	hasAccess, err = service.HasMaintainerAccess(context.Background(), client, "TargetOrg", "repo-2")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if hasAccess {
+		t.Error("expected denied, got access")
 	}
 }
