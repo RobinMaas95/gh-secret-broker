@@ -23,14 +23,21 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 	})
 }
 
-func preventCSRF(next http.Handler) http.Handler {
-	csrfHandler := nosurf.New(next)
-	csrfHandler.SetBaseCookie(http.Cookie{
-		HttpOnly: true,
-		Path:     "/",
-		Secure:   false, // Set based on environment if needed
-	})
-	return csrfHandler
+// preventCSRF is a factory function that creates CSRF protection middleware.
+// It needs to be called with the application config to set cookie security properly.
+// The factory pattern is used because a middleware has a specific signature (func(http.Handler) http.Handler)
+// meaning we cannot pass in parameters. Using the factory, we can pass in the parameter and access it in the middleware.
+func preventCSRFFactory(isProduction bool) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		csrfHandler := nosurf.New(next)
+		csrfHandler.SetBaseCookie(http.Cookie{
+			HttpOnly: true,
+			Path:     "/",
+			Secure:   isProduction, // Only send over HTTPS in production
+			SameSite: http.SameSiteLaxMode,
+		})
+		return csrfHandler
+	}
 }
 
 func (app *application) logRequest(next http.Handler) http.Handler {

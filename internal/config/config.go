@@ -17,6 +17,7 @@ type Config struct {
 	GithubClientID     string
 	GithubClientSecret string
 	GithubOrg          string
+	GithubPAT          string
 }
 
 // IsProduction returns true if running in production environment
@@ -60,6 +61,7 @@ func Load() (*Config, error) {
 		GithubClientID:     getEnv("GITHUB_CLIENT_ID"),
 		GithubClientSecret: getEnv("GITHUB_CLIENT_SECRET"),
 		GithubOrg:          getEnv("GITHUB_ORG"),
+		GithubPAT:          getEnv("GITHUB_PAT"),
 	}
 
 	if len(errs) > 0 {
@@ -77,8 +79,7 @@ func Load() (*Config, error) {
 func generateRandomSecret() string {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
-		// Fallback to a less secure but functional secret for development only
-		return "dev-only-insecure-secret-key-32b"
+		panic("failed to generate random secret: " + err.Error())
 	}
 	return base64.StdEncoding.EncodeToString(bytes)
 }

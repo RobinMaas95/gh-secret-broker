@@ -1,0 +1,65 @@
+package main
+
+import (
+	"encoding/json"
+	"log/slog"
+	"net/http"
+
+	"github.com/google/go-github/v80/github"
+	"golang.org/x/oauth2"
+)
+
+func (app *application) handleListSecrets(w http.ResponseWriter, r *http.Request) {
+	// Get Session & Verify User
+	user, ok := app.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	// Extract path parameters
+	owner := r.PathValue("owner")
+	repo := r.PathValue("repo")
+
+	if owner == "" || repo == "" {
+		http.Error(w, "Missing owner or repo", http.StatusBadRequest)
+		return
+	}
+
+	userTs := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: user.AccessToken},
+	)
+	userTc := oauth2.NewClient(r.Context(), userTs)
+	// We do not work on userGhClient directly, but instead pass it to the repository service.
+	// In tests, we can mock the repository service and inject a mock client or just
+	// return a fixed value.
+	userGhClient := github.NewClient(userTc)
+	hasAccess, err := app.repositories.HasMaintainerAccess(r.Context(), userGhClient, owner, repo)
+
+	if err != nil {
+		app.logger.Error("Failed to check permissions", slog.String("error", err.Error()))
+		http.Error(w, "Permission check failed", http.StatusInternalServerError)
+		return
+	}
+	if !hasAccess {
+		app.logger.Warn("User attempted to access secrets without permission", slog.String("user", user.Email), slog.String("repo", owner+"/"+repo))
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Use Shared PAT Client (Only after verification)
+	githubClient := app.patClient
+
+	// Call repository service
+	secrets, err := app.repositories.ListSecrets(r.Context(), githubClient, owner, repo)
+	if err != nil {
+		app.logger.Error("Failed to list secrets", slog.String("error", err.Error()))
+		http.Error(w, "Failed to list secrets", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(secrets); err != nil {
+		app.logger.Error("Failed to encode secrets", slog.String("error", err.Error()))
+	}
+}

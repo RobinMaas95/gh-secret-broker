@@ -19,6 +19,8 @@ func TestConfig_Load(t *testing.T) {
 				"GITHUB_CLIENT_ID":     "test-client-id",
 				"GITHUB_CLIENT_SECRET": "test-client-secret",
 				"GITHUB_ORG":           "test-org",
+				"GITHUB_PAT":           "test-pat",
+				"ADDR":                 ":4000",
 			},
 			wantErr: false,
 		},

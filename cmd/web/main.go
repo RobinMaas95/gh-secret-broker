@@ -17,14 +17,17 @@ import (
 	"github.com/RobinMaas95/gh-secret-broker/internal/config"
 	"github.com/RobinMaas95/gh-secret-broker/internal/oauth"
 	"github.com/RobinMaas95/gh-secret-broker/internal/repository"
+	"github.com/google/go-github/v80/github"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
 )
 
 type application struct {
 	logger       *slog.Logger
 	debugMode    bool
-	repositories *repository.Service
+	repositories repository.RepositoryService
 	config       *config.Config
+	patClient    *github.Client
 }
 
 func setupLogger(logFormat string) slog.Handler {
@@ -82,11 +85,22 @@ func main() {
 	logger := slog.New(setupLogger(logFormat))
 	slog.SetDefault(logger)
 
+	// Initialize PAT Client
+	// The pat client is used to access the GitHub API
+	// on behalf of the application because the user's token is
+	// not powerful enough to access secrets.
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: cfg.GithubPAT},
+	)
+	tc := oauth2.NewClient(context.Background(), ts)
+	patClient := github.NewClient(tc)
+
 	app := &application{
 		logger:       logger,
 		debugMode:    false,
 		repositories: repository.NewService(),
 		config:       cfg,
+		patClient:    patClient,
 	}
 
 	oauthService := oauth.NewService(logger, cfg)
