@@ -58,8 +58,58 @@ func (app *application) handleListSecrets(w http.ResponseWriter, r *http.Request
 	}
 
 	// Respond
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(secrets); err != nil {
 		app.logger.Error("Failed to encode secrets", slog.String("error", err.Error()))
 	}
+}
+
+func (app *application) handleDeleteSecret(w http.ResponseWriter, r *http.Request) {
+	// Get Session & Verify User
+	user, ok := app.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	// Extract path parameters
+	owner := r.PathValue("owner")
+	repo := r.PathValue("repo")
+	name := r.PathValue("name")
+
+	if owner == "" || repo == "" || name == "" {
+		http.Error(w, "Missing owner, repo, or secret name", http.StatusBadRequest)
+		return
+	}
+
+	userTs := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: user.AccessToken},
+	)
+	userTc := oauth2.NewClient(r.Context(), userTs)
+	userGhClient := github.NewClient(userTc)
+	hasAccess, err := app.repositories.HasMaintainerAccess(r.Context(), userGhClient, owner, repo)
+
+	if err != nil {
+		app.logger.Error("Failed to check permissions", slog.String("error", err.Error()))
+		http.Error(w, "Permission check failed", http.StatusInternalServerError)
+		return
+	}
+	if !hasAccess {
+		app.logger.Warn("User attempted to delete secret without permission", slog.String("user", user.Email), slog.String("repo", owner+"/"+repo))
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Use Shared PAT Client (Only after verification)
+	githubClient := app.patClient
+
+	// Call repository service
+	err = app.repositories.DeleteSecret(r.Context(), githubClient, owner, repo, name)
+	if err != nil {
+		app.logger.Error("Failed to delete secret", slog.String("error", err.Error()))
+		http.Error(w, "Failed to delete secret", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

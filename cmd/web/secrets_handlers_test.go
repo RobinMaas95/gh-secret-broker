@@ -104,3 +104,48 @@ func TestHandleListSecrets(t *testing.T) {
 		assert.Equal(t, res.StatusCode, http.StatusForbidden)
 	})
 }
+
+func TestHandleDeleteSecret(t *testing.T) {
+	t.Run("Authorized Delete", func(t *testing.T) {
+		mockService := &mockRepositoryService{
+			HasMaintainerAccessFunc: func(ctx context.Context, client *github.Client, owner, repo string) (bool, error) {
+				return true, nil
+			},
+			DeleteSecretFunc: func(ctx context.Context, client *github.Client, owner, repo, name string) error {
+				if owner == "TargetOrg" && repo == "repo-1" && name == "SECRET_1" {
+					return nil
+				}
+				panic("unexpected arguments to DeleteSecret")
+			},
+		}
+
+		app := &application{
+			logger:       setupTestLogger(),
+			repositories: mockService,
+			config:       &config.Config{GithubOrg: "test-org"},
+		}
+
+		store := sessions.NewCookieStore([]byte("secret"))
+		gothic.Store = store
+		user := goth.User{AccessToken: "valid-token"}
+
+		req, _ := http.NewRequest("DELETE", "/api/repo/TargetOrg/repo-1/secrets/SECRET_1", nil)
+		req.SetPathValue("owner", "TargetOrg")
+		req.SetPathValue("repo", "repo-1")
+		req.SetPathValue("name", "SECRET_1")
+		w := httptest.NewRecorder()
+
+		session, _ := store.Get(req, "session")
+		session.Values["user"] = user
+		_ = session.Save(req, w)
+
+		req.Header.Set("Cookie", w.Header().Get("Set-Cookie"))
+
+		app.handleDeleteSecret(w, req)
+
+		res := w.Result()
+		defer func() { _ = res.Body.Close() }()
+
+		assert.Equal(t, res.StatusCode, http.StatusNoContent)
+	})
+}
