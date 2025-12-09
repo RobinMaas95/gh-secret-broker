@@ -10,6 +10,7 @@ import (
 type mockRepositoryService struct {
 	ListMaintainableRepositoriesFunc func(ctx context.Context, client *github.Client, orgName string) ([]*github.Repository, error)
 	ListSecretsFunc                  func(ctx context.Context, client *github.Client, owner, repo string) ([]string, error)
+	DeleteSecretFunc                 func(ctx context.Context, client *github.Client, owner, repo, name string) error
 	HasMaintainerAccessFunc          func(ctx context.Context, client *github.Client, owner, repo string) (bool, error)
 }
 
@@ -26,6 +27,13 @@ func (m *mockRepositoryService) ListSecrets(ctx context.Context, client *github.
 		return m.ListSecretsFunc(ctx, client, owner, repo)
 	}
 	return nil, nil
+}
+
+func (m *mockRepositoryService) DeleteSecret(ctx context.Context, client *github.Client, owner, repo, name string) error {
+	if m.DeleteSecretFunc != nil {
+		return m.DeleteSecretFunc(ctx, client, owner, repo, name)
+	}
+	return nil
 }
 
 func (m *mockRepositoryService) HasMaintainerAccess(ctx context.Context, client *github.Client, owner, repo string) (bool, error) {

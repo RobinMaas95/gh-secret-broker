@@ -12,6 +12,7 @@ import (
 type RepositoryService interface {
 	ListMaintainableRepositories(ctx context.Context, client *github.Client, orgName string) ([]*github.Repository, error)
 	ListSecrets(ctx context.Context, client *github.Client, owner, repo string) ([]string, error)
+	DeleteSecret(ctx context.Context, client *github.Client, owner, repo, name string) error
 	HasMaintainerAccess(ctx context.Context, client *github.Client, owner, repo string) (bool, error)
 }
 
@@ -79,6 +80,12 @@ func (s *Service) ListSecrets(ctx context.Context, client *github.Client, owner,
 	}
 
 	return allSecrets, nil
+}
+
+// DeleteSecret deletes a secret from a repository.
+func (s *Service) DeleteSecret(ctx context.Context, client *github.Client, owner, repo, name string) error {
+	_, err := client.Actions.DeleteRepoSecret(ctx, owner, repo, name)
+	return err
 }
 
 // HasMaintainerAccess checks if the user has 'admin' or 'maintain' permissions on the repository.

@@ -43,6 +43,10 @@ func (app *application) routes(oauthService *oauth.Service) http.Handler {
 	mux.HandleFunc("GET /api/user", oauthService.HandleUserAPI)
 	mux.HandleFunc("GET /api/user/repos", app.handleListRepositories)
 	mux.HandleFunc("GET /api/repo/{owner}/{repo}/secrets", app.handleListSecrets)
+	// Dynamic because we need our preventCSRFFactory to be applied so that
+	// our token endpoint returns a valid token
+	mux.Handle("GET /api/csrf-token", dynamic.ThenFunc(app.handleCsrfToken))
+	mux.Handle("DELETE /api/repo/{owner}/{repo}/secrets/{name}", dynamic.ThenFunc(app.handleDeleteSecret))
 
 	// Serve index.html for /userpage to support SPA history mode (if used)
 	mux.HandleFunc("GET /userpage", func(w http.ResponseWriter, r *http.Request) {
