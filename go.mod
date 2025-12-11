@@ -18,4 +18,5 @@ require (
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
 )

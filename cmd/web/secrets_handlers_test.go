@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/RobinMaas95/gh-secret-broker/internal/assert"
@@ -142,6 +143,52 @@ func TestHandleDeleteSecret(t *testing.T) {
 		req.Header.Set("Cookie", w.Header().Get("Set-Cookie"))
 
 		app.handleDeleteSecret(w, req)
+
+		res := w.Result()
+		defer func() { _ = res.Body.Close() }()
+
+		assert.Equal(t, res.StatusCode, http.StatusNoContent)
+	})
+}
+
+func TestHandleCreateSecret(t *testing.T) {
+	t.Run("Authorized Create", func(t *testing.T) {
+		mockService := &mockRepositoryService{
+			HasMaintainerAccessFunc: func(ctx context.Context, client *github.Client, owner, repo string) (bool, error) {
+				return true, nil
+			},
+			CreateOrUpdateSecretFunc: func(ctx context.Context, client *github.Client, owner, repo, name, value string) error {
+				if owner == "TargetOrg" && repo == "repo-1" && name == "NEW_SECRET" && value == "secret-value" {
+					return nil
+				}
+				panic("unexpected arguments to CreateOrUpdateSecret")
+			},
+		}
+
+		app := &application{
+			logger:       setupTestLogger(),
+			repositories: mockService,
+			config:       &config.Config{GithubOrg: "test-org"},
+		}
+
+		store := sessions.NewCookieStore([]byte("secret"))
+		gothic.Store = store
+		user := goth.User{AccessToken: "valid-token"}
+
+		reqBody := strings.NewReader(`{"value": "secret-value"}`)
+		req, _ := http.NewRequest("PUT", "/api/repo/TargetOrg/repo-1/secrets/NEW_SECRET", reqBody)
+		req.SetPathValue("owner", "TargetOrg")
+		req.SetPathValue("repo", "repo-1")
+		req.SetPathValue("name", "NEW_SECRET")
+		w := httptest.NewRecorder()
+
+		session, _ := store.Get(req, "session")
+		session.Values["user"] = user
+		_ = session.Save(req, w)
+
+		req.Header.Set("Cookie", w.Header().Get("Set-Cookie"))
+
+		app.handleCreateSecret(w, req)
 
 		res := w.Result()
 		defer func() { _ = res.Body.Close() }()

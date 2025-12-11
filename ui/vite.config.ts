@@ -12,6 +12,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(process.cwd(), "./src"),
       "$lib": path.resolve(process.cwd(), "./src/lib"),
+      "$app/environment": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
+      "$app/stores": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
+      "$app/navigation": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
+      "$app/forms": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
     },
     conditions: ['browser'],
   },
@@ -19,16 +23,10 @@ export default defineConfig({
     outDir: "./dist/"
   },
   test: {
-    globals: true,
+    include: ['src/**/*.{test,spec}.{js,ts}'],
     environment: 'jsdom',
-    setupFiles: ['./src/setupTests.ts'],
-    alias: {
-      "$lib": path.resolve(process.cwd(), "./src/lib"),
-    },
-    server: {
-      deps: {
-        inline: ['@testing-library/svelte']
-      }
-    },
+    setupFiles: ['./src/setupTests.ts', './src/test/setup_kit.ts'],
+    globals: true,
+    restoreMocks: true
   }
 })

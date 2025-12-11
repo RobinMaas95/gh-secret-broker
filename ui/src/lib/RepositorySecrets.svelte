@@ -3,6 +3,7 @@
     import * as Card from "$lib/components/ui/card";
     import { Button, buttonVariants } from "$lib/components/ui/button";
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
+    import AddSecretDialog from "$lib/components/AddSecretDialog.svelte";
 
     let { owner, repo } = $props<{ owner: string; repo: string }>();
 
@@ -86,7 +87,20 @@
 
     <Card.Root>
         <Card.Header>
-            <Card.Title class="text-2xl">Secrets for {owner}/{repo}</Card.Title>
+            <div class="flex justify-between items-center">
+                <Card.Title class="text-2xl"
+                    >Secrets for {owner}/{repo}</Card.Title
+                >
+                <AddSecretDialog
+                    {owner}
+                    {repo}
+                    onSecretAdded={(name: string) => {
+                        if (!secrets.includes(name)) {
+                            secrets = [...secrets, name];
+                        }
+                    }}
+                />
+            </div>
             <Card.Description
                 >Manage secrets for this repository.</Card.Description
             >

@@ -113,3 +113,65 @@ func (app *application) handleDeleteSecret(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (app *application) handleCreateSecret(w http.ResponseWriter, r *http.Request) {
+	// Get Session & Verify User
+	user, ok := app.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	// Extract path parameters
+	owner := r.PathValue("owner")
+	repo := r.PathValue("repo")
+	// secret name from path
+	name := r.PathValue("name")
+
+	if owner == "" || repo == "" || name == "" {
+		http.Error(w, "Missing owner, repo, or secret name", http.StatusBadRequest)
+		return
+	}
+
+	// Parse Body
+	var req struct {
+		Value string `json:"value"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	if req.Value == "" {
+		http.Error(w, "Secret value is required", http.StatusBadRequest)
+		return
+	}
+
+	userTs := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: user.AccessToken},
+	)
+	userTc := oauth2.NewClient(r.Context(), userTs)
+	userGhClient := github.NewClient(userTc)
+
+	hasAccess, err := app.repositories.HasMaintainerAccess(r.Context(), userGhClient, owner, repo)
+	if err != nil {
+		app.logger.Error("Failed to check permissions", slog.String("error", err.Error()))
+		http.Error(w, "Permission check failed", http.StatusInternalServerError)
+		return
+	}
+	if !hasAccess {
+		app.logger.Warn("User attempted to create secret without permission", slog.String("user", user.Email), slog.String("repo", owner+"/"+repo))
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	// Use Shared PAT Client (Only after verification)
+	githubClient := app.patClient
+
+	err = app.repositories.CreateOrUpdateSecret(r.Context(), githubClient, owner, repo, name, req.Value)
+	if err != nil {
+		app.logger.Error("Failed to create secret", slog.String("error", err.Error()))
+		http.Error(w, "Failed to create secret", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
