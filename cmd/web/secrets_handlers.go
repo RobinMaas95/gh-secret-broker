@@ -25,14 +25,15 @@ func (app *application) handleListSecrets(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	userTs := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: user.AccessToken},
-	)
-	userTc := oauth2.NewClient(r.Context(), userTs)
 	// We do not work on userGhClient directly, but instead pass it to the repository service.
 	// In tests, we can mock the repository service and inject a mock client or just
 	// return a fixed value.
-	userGhClient := github.NewClient(userTc)
+	userGhClient, err := app.getGitHubClient(r.Context(), user.AccessToken)
+	if err != nil {
+		app.logger.Error("Failed to create GitHub client", slog.String("error", err.Error()))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 	hasAccess, err := app.repositories.HasMaintainerAccess(r.Context(), userGhClient, owner, repo)
 
 	if err != nil {
@@ -145,11 +146,13 @@ func (app *application) handleCreateSecret(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	userTs := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: user.AccessToken},
-	)
-	userTc := oauth2.NewClient(r.Context(), userTs)
-	userGhClient := github.NewClient(userTc)
+	// We do not work on userGhClient directly, but instead pass it to the repository service.
+	userGhClient, err := app.getGitHubClient(r.Context(), user.AccessToken)
+	if err != nil {
+		app.logger.Error("Failed to create GitHub client", slog.String("error", err.Error()))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
 	hasAccess, err := app.repositories.HasMaintainerAccess(r.Context(), userGhClient, owner, repo)
 	if err != nil {

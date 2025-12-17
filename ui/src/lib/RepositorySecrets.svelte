@@ -1,45 +1,31 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import * as Card from "$lib/components/ui/card";
-    import { Button, buttonVariants } from "$lib/components/ui/button";
+    import { buttonVariants } from "$lib/components/ui/button";
     import * as AlertDialog from "$lib/components/ui/alert-dialog";
     import AddSecretDialog from "$lib/components/AddSecretDialog.svelte";
+    import { toast } from "svelte-sonner";
+    import Trash2 from "lucide-svelte/icons/trash-2";
 
-    let { owner, repo } = $props<{ owner: string; repo: string }>();
+    let {
+        owner,
+        repo,
+        secrets: initialSecrets,
+        csrfToken: initialCsrfToken,
+    } = $props<{
+        owner: string;
+        repo: string;
+        secrets: string[];
+        csrfToken: string | null;
+    }>();
 
     let secrets = $state<string[]>([]);
-    let loading = $state(true);
     let error = $state<string | null>(null);
-
     let csrfToken = $state<string | null>(null);
 
-    async function fetchSecrets() {
-        loading = true;
-        error = null;
-        try {
-            const res = await fetch(`/api/repo/${owner}/${repo}/secrets`);
-            if (!res.ok) {
-                throw new Error("Failed to fetch secrets");
-            }
-            secrets = (await res.json()) || [];
-        } catch (e) {
-            error = (e as Error).message;
-        } finally {
-            loading = false;
-        }
-    }
-
-    async function fetchCsrfToken() {
-        try {
-            const res = await fetch("/api/csrf-token");
-            if (res.ok) {
-                const data = await res.json();
-                csrfToken = data.token;
-            }
-        } catch (e) {
-            console.error("Failed to fetch CSRF token", e);
-        }
-    }
+    $effect(() => {
+        secrets = initialSecrets || [];
+        csrfToken = initialCsrfToken || null;
+    });
 
     async function deleteSecret(name: string) {
         if (!csrfToken) {
@@ -64,21 +50,19 @@
 
             // Remove from list immediately
             secrets = secrets.filter((s) => s !== name);
+            toast("Secret deleted successfully", {
+                icon: Trash2 as any,
+            });
         } catch (e) {
             error = (e as Error).message;
         }
     }
-
-    onMount(() => {
-        fetchSecrets();
-        fetchCsrfToken();
-    });
 </script>
 
 <div class="container mx-auto py-8 max-w-4xl">
     <div class="mb-4">
         <a
-            href="#/dashboard"
+            href="/"
             class="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2"
         >
             ← Back to Dashboard
@@ -94,6 +78,7 @@
                 <AddSecretDialog
                     {owner}
                     {repo}
+                    {csrfToken}
                     onSecretAdded={(name: string) => {
                         if (!secrets.includes(name)) {
                             secrets = [...secrets, name];
@@ -106,11 +91,7 @@
             >
         </Card.Header>
         <Card.Content>
-            {#if loading}
-                <div class="text-center py-8 text-muted-foreground">
-                    Loading secrets...
-                </div>
-            {:else if error}
+            {#if error}
                 <div class="text-destructive text-center py-8">{error}</div>
             {:else if secrets.length === 0}
                 <div class="text-center py-8 text-muted-foreground">

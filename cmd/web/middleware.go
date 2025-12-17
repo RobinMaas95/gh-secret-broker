@@ -57,7 +57,7 @@ func (app *application) logRequest(next http.Handler) http.Handler {
 
 func (app *application) commonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'sha256-OWM7eqRFZQb+Ir51EYZz6GAUUG4Oy2fNwCWX0peasbE=' fonts.googleapis.com; script-src 'self' 'unsafe-eval'; font-src fonts.gstatic.com; img-src 'self' avatars.githubusercontent.com")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'sha256-OWM7eqRFZQb+Ir51EYZz6GAUUG4Oy2fNwCWX0peasbE=' 'sha256-tcbDxjMo+xKqM21aCGYbs/QAJqB7yUXC06oPWDapBgc=' 'sha256-zWpgYAIYQbPPXWm2cNN92poH5pezyiyARDiGUjuqbFU=' 'sha256-NDlUvbI0C5AhCY+uu2OxERc8b/zOZ5m/C3vpWbghG1M=' 'sha256-bo9/JAqIUBMiSHL1O4oiO3U5UHaFxqbagFBryI+8mwU=' 'unsafe-hashes' fonts.googleapis.com; script-src 'self' 'unsafe-eval' 'unsafe-inline'; font-src fonts.gstatic.com; img-src 'self' avatars.githubusercontent.com")
 		w.Header().Set("Referrer-Policy", "origin-when-cross-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "deny")

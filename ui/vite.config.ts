@@ -1,32 +1,33 @@
-/// <reference types="vitest" />
-import path from "path";
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [svelte(), tailwindcss()],
-  resolve: {
-    alias: {
-      "@": path.resolve(process.cwd(), "./src"),
-      "$lib": path.resolve(process.cwd(), "./src/lib"),
-      "$app/environment": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
-      "$app/stores": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
-      "$app/navigation": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
-      "$app/forms": path.resolve(process.cwd(), "./src/test/sveltekit_mocks.ts"),
-    },
-    conditions: ['browser'],
-  },
-  build: {
-    outDir: "./dist/"
+  plugins: [sveltekit(), tailwindcss()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/auth': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false
+      },
+      '/logout': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   test: {
     include: ['src/**/*.{test,spec}.{js,ts}'],
+    // Setup files might need adjustment later
+    setupFiles: ['./src/setupTests.ts'],
     environment: 'jsdom',
-    setupFiles: ['./src/setupTests.ts', './src/test/setup_kit.ts'],
-    globals: true,
     restoreMocks: true
   }
-})
+});

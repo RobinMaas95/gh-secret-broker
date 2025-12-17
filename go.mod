@@ -9,6 +9,7 @@ require (
 	github.com/justinas/alice v1.2.0
 	github.com/justinas/nosurf v1.2.0
 	github.com/markbates/goth v1.82.0
+	golang.org/x/crypto v0.46.0
 	golang.org/x/oauth2 v0.27.0
 )
 
@@ -18,5 +19,5 @@ require (
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 )

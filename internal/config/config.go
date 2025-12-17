@@ -10,14 +10,15 @@ import (
 )
 
 type Config struct {
-	Addr               string
-	BaseURL            string
-	Environment        string // "development" or "production"
-	SessionSecret      string
-	GithubClientID     string
-	GithubClientSecret string
-	GithubOrg          string
-	GithubPAT          string
+	Addr                string
+	BaseURL             string
+	Environment         string // "development" or "production"
+	SessionSecret       string
+	GithubClientID      string
+	GithubClientSecret  string
+	GithubOrg           string
+	GithubPAT           string
+	GithubEnterpriseURL string
 }
 
 // IsProduction returns true if running in production environment
@@ -55,13 +56,14 @@ func Load() (*Config, error) {
 	}
 
 	config := &Config{
-		BaseURL:            os.Getenv("BASE_URL"), // Optional
-		Environment:        env,
-		SessionSecret:      sessionSecret,
-		GithubClientID:     getEnv("GITHUB_CLIENT_ID"),
-		GithubClientSecret: getEnv("GITHUB_CLIENT_SECRET"),
-		GithubOrg:          getEnv("GITHUB_ORG"),
-		GithubPAT:          getEnv("GITHUB_PAT"),
+		BaseURL:             os.Getenv("BASE_URL"), // Optional
+		Environment:         env,
+		SessionSecret:       sessionSecret,
+		GithubClientID:      getEnv("GITHUB_CLIENT_ID"),
+		GithubClientSecret:  getEnv("GITHUB_CLIENT_SECRET"),
+		GithubOrg:           getEnv("GITHUB_ORG"),
+		GithubPAT:           getEnv("GITHUB_PAT"),
+		GithubEnterpriseURL: os.Getenv("GITHUB_ENTERPRISE_URL"), // Optional
 	}
 
 	if len(errs) > 0 {

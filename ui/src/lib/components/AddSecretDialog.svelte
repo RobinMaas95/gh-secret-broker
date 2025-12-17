@@ -7,75 +7,73 @@
     import { z } from "zod";
     import { defaults, superForm } from "sveltekit-superforms";
     import { zod } from "sveltekit-superforms/adapters";
+    import { toast } from "svelte-sonner";
+    import * as InputGroup from "$lib/components/ui/input-group";
+    import * as Tooltip from "$lib/components/ui/tooltip";
+    import Info from "lucide-svelte/icons/info";
 
-    let { owner, repo, onSecretAdded } = $props<{
+    let { owner, repo, onSecretAdded, csrfToken } = $props<{
         owner: string;
         repo: string;
         onSecretAdded: (name: string) => void;
+        csrfToken: string | null;
     }>();
 
     let open = $state(false);
-    let loading = $state(false);
-    let submitError = $state<string | null>(null);
 
     const formSchema = z.object({
         name: z
             .string()
             .regex(
                 /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-                "Name must start with a letter or underscore and contain only alphanumeric characters and underscores.",
+                "Name must start with a letter or underscore and contain only alphanumeric characters and underscores. (Regex '^[a-zA-Z_][a-zA-Z0-9_]*$')",
             ),
         value: z.string().min(1, "Secret value is required"),
     });
 
     type FormSchema = z.infer<typeof formSchema>;
 
-    const form = superForm(defaults(zod(formSchema)), {
-        SPA: true,
-        validators: zod(formSchema),
-        onUpdate: async ({ form: f }) => {
-            if (f.valid) {
-                loading = true;
-                submitError = null;
-                try {
-                    // Get CSRF Token first
-                    const csrfRes = await fetch("/api/csrf-token");
-                    if (!csrfRes.ok)
-                        throw new Error("Failed to get CSRF token");
-                    const { token: csrfToken } = await csrfRes.json();
+    const form = superForm<FormSchema>(
+        defaults(zod(formSchema as any) as any),
+        {
+            SPA: true,
+            validators: zod(formSchema as any),
+            onUpdate: async ({ form: f }) => {
+                if (f.valid) {
+                    try {
+                        if (!csrfToken)
+                            throw new Error("CSRF token is missing");
 
-                    const res = await fetch(
-                        `/api/repo/${owner}/${repo}/secrets/${f.data.name}`,
-                        {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-Token": csrfToken,
+                        const res = await fetch(
+                            `/api/repo/${owner}/${repo}/secrets/${f.data.name}`,
+                            {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRF-Token": csrfToken,
+                                },
+                                body: JSON.stringify({ value: f.data.value }),
                             },
-                            body: JSON.stringify({ value: f.data.value }),
-                        },
-                    );
+                        );
 
-                    if (!res.ok) {
-                        throw new Error("Failed to create secret");
+                        if (!res.ok) {
+                            throw new Error("Failed to create secret");
+                        }
+
+                        onSecretAdded(f.data.name.toUpperCase());
+                        toast.success(
+                            `Secret ${f.data.name} created successfully`,
+                        );
+                        open = false;
+                    } catch (e) {
+                        toast.error((e as Error).message);
                     }
-
-                    onSecretAdded(f.data.name);
-                    open = false;
-
-                    // Reset form manually? superForm usually handles reset but in SPA mode on success we might need to be explicit if dialog reopens
-                    // But defaults() recreated it initially.
-                    // Let's just rely on binding 'open' to reset if needed or just letting it be.
-                } catch (e) {
-                    submitError = (e as Error).message;
-                } finally {
-                    loading = false;
                 }
-            }
+            },
         },
-    });
+    );
 
-    const { form: formData, enhance } = form;
+    const { form: formData, enhance, submitting, allErrors } = form;
 </script>
 
 <Dialog.Root bind:open>
@@ -92,26 +90,45 @@
         </Dialog.Header>
 
         <form method="POST" use:enhance class="grid gap-4 py-4">
-            {#if submitError}
-                <div class="text-destructive text-sm">{submitError}</div>
-            {/if}
             <Form.Field {form} name="name">
                 <Form.Control>
                     {#snippet children({ props })}
                         <Form.Label>Name</Form.Label>
-                        <Input
-                            {...props}
-                            bind:value={$formData.name}
-                            placeholder="SECRET_NAME"
-                            disabled={loading}
-                        />
+                        <InputGroup.Root>
+                            <InputGroup.Input
+                                {...props}
+                                bind:value={$formData.name}
+                                placeholder="SECRET_NAME"
+                                disabled={$submitting}
+                            />
+                            <InputGroup.Addon align="inline-end">
+                                <Tooltip.Root>
+                                    <Tooltip.Trigger>
+                                        {#snippet child({
+                                            props: tooltipProps,
+                                        })}
+                                            <InputGroup.Button
+                                                {...tooltipProps}
+                                                aria-label="Info"
+                                            >
+                                                <Info class="size-4" />
+                                            </InputGroup.Button>
+                                        {/snippet}
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                        <p>
+                                            Secret name must start with a letter
+                                            or underscore and contain only
+                                            alphanumeric characters and
+                                            underscores (GitHub will convert it
+                                            to uppercase)
+                                        </p>
+                                    </Tooltip.Content>
+                                </Tooltip.Root>
+                            </InputGroup.Addon>
+                        </InputGroup.Root>
                     {/snippet}
                 </Form.Control>
-                <Form.Description
-                    >Secret name must start with a letter or underscore and
-                    contain only alphanumeric characters and underscores (GitHub
-                    will convert to uppercase)</Form.Description
-                >
                 <Form.FieldErrors />
             </Form.Field>
 
@@ -124,7 +141,7 @@
                             bind:value={$formData.value}
                             placeholder="Secret value..."
                             class="font-mono"
-                            disabled={loading}
+                            disabled={$submitting}
                         />
                     {/snippet}
                 </Form.Control>
@@ -132,8 +149,15 @@
             </Form.Field>
 
             <Dialog.Footer>
-                <Button type="submit" disabled={loading}>
-                    {#if loading}Saving...{:else}Save Secret{/if}
+                <Button
+                    type="submit"
+                    disabled={$submitting ||
+                        !$formData.name ||
+                        !$formData.value ||
+                        $allErrors.length > 0}
+                    variant="default"
+                >
+                    {#if $submitting}Saving...{:else}Save Secret{/if}
                 </Button>
             </Dialog.Footer>
         </form>

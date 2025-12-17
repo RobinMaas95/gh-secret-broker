@@ -13,7 +13,7 @@ describe('RepositorySecrets', () => {
 
     it('shows loading state initially', () => {
         (window.fetch as any).mockReturnValue(new Promise(() => { })); // Never resolves
-        render(RepositorySecrets, { owner, repo });
+        render(RepositorySecrets, { owner, repo, secrets: [], csrfToken: 'mock-token' });
         expect(screen.getByText('Loading secrets...')).toBeInTheDocument();
     });
 
@@ -23,7 +23,7 @@ describe('RepositorySecrets', () => {
             json: async () => ['SECRET_1', 'SECRET_2'],
         });
 
-        render(RepositorySecrets, { owner, repo });
+        render(RepositorySecrets, { owner, repo, secrets: [], csrfToken: 'mock-token' });
 
         await waitFor(() => {
             expect(screen.getByText('SECRET_1')).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('RepositorySecrets', () => {
             json: async () => [],
         });
 
-        render(RepositorySecrets, { owner, repo });
+        render(RepositorySecrets, { owner, repo, secrets: [], csrfToken: 'mock-token' });
 
         await waitFor(() => {
             expect(screen.getByText('No secrets found for this repository.')).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('RepositorySecrets', () => {
             json: async () => null,
         });
 
-        render(RepositorySecrets, { owner, repo });
+        render(RepositorySecrets, { owner, repo, secrets: [], csrfToken: 'mock-token' });
 
         await waitFor(() => {
             expect(screen.getByText('No secrets found for this repository.')).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('RepositorySecrets', () => {
             ok: false,
         });
 
-        render(RepositorySecrets, { owner, repo });
+        render(RepositorySecrets, { owner, repo, secrets: [], csrfToken: 'mock-token' });
 
         await waitFor(() => {
             expect(screen.getByText('Failed to fetch secrets')).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe('RepositorySecrets', () => {
         });
 
         const user = userEvent.setup();
-        render(RepositorySecrets, { owner, repo });
+        render(RepositorySecrets, { owner, repo, secrets: [], csrfToken: 'mock-token' });
 
         // Wait for secret to appear
         await waitFor(() => {
