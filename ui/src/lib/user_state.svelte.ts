@@ -1,13 +1,4 @@
-interface User {
-    AvatarURL: string;
-    Name: string;
-    NickName: string;
-    Email: string;
-    Location: string;
-    Description: string;
-    UserID: string;
-    Provider: string;
-}
+import type { User } from "$lib/types";
 
 export function createUserState() {
     let current = $state<User | null>(null);
@@ -36,6 +27,11 @@ export function createUserState() {
         get loading() { return loading },
         get error() { return error },
         load,
+        setLoaded(user: User | null, err: string | null = null) {
+            current = user;
+            error = err;
+            loading = false;
+        },
     };
 }
 

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
+	"github.com/google/go-github/v80/github"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
+	"golang.org/x/oauth2"
 )
 
 // requireUser checks if the user is authenticated in the session.
@@ -39,4 +42,19 @@ func (app *application) requireUser(w http.ResponseWriter, r *http.Request) (got
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
 	app.logger.Error("server error", slog.String("error", err.Error()), slog.String("method", r.Method), slog.String("uri", r.URL.RequestURI()))
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+}
+
+func (app *application) getGitHubClient(ctx context.Context, token string) (*github.Client, error) {
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+
+	if app.config.GithubEnterpriseURL != "" {
+		baseURL := app.config.GithubEnterpriseURL + "/api/v3/"
+		uploadURL := app.config.GithubEnterpriseURL + "/api/v3/upload/"
+		client := github.NewClient(tc)
+		return client.WithEnterpriseURLs(baseURL, uploadURL)
+	}
+	return github.NewClient(tc), nil
 }

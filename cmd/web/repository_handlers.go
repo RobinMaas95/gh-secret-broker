@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-
-	"github.com/google/go-github/v80/github"
-	"golang.org/x/oauth2"
 )
 
 // handleListRepositories handles the GET /api/repositories request.
@@ -20,11 +17,12 @@ func (app *application) handleListRepositories(w http.ResponseWriter, r *http.Re
 	}
 
 	// Create GitHub Client using User's Token
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: user.AccessToken},
-	)
-	tc := oauth2.NewClient(r.Context(), ts)
-	githubClient := github.NewClient(tc)
+	githubClient, err := app.getGitHubClient(r.Context(), user.AccessToken)
+	if err != nil {
+		app.logger.Error("Failed to create GitHub client", slog.String("error", err.Error()))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
 	// Retrieve Repositories via Service
 	orgName := app.config.GithubOrg

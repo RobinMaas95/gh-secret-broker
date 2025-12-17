@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import * as Card from "$lib/components/ui/card";
     import { Button } from "$lib/components/ui/button";
+    import { goto } from "$app/navigation";
 
     interface Repository {
         id: number;
@@ -12,52 +12,31 @@
         private: boolean;
     }
 
-    let repositories = $state<Repository[]>([]);
-    let loading = $state(true);
-    let error = $state<string | null>(null);
-
-    onMount(async () => {
-        try {
-            const res = await fetch("/api/user/repos");
-            if (!res.ok) {
-                throw new Error("Failed to fetch repositories");
-            }
-            repositories = await res.json();
-        } catch (e) {
-            error = (e as Error).message;
-        } finally {
-            loading = false;
-        }
-    });
+    let { repositories } = $props<{ repositories: Repository[] }>();
 
     function navigateToRepo(repoName: string) {
-        window.location.hash = `#/repo/${repoName}`;
+        goto(`/repo/${repoName}`);
     }
 </script>
 
 <Card.Root class="w-full mt-4">
-    <Card.Header>
+    <Card.Header class="text-center">
         <Card.Title>Repositories</Card.Title>
         <Card.Description
             >Select a repository to manage secrets.</Card.Description
         >
     </Card.Header>
     <Card.Content>
-        {#if loading}
-            <div class="text-center py-4">Loading repositories...</div>
-        {:else if error}
-            <div class="text-destructive text-center py-4">{error}</div>
-        {:else if repositories.length === 0}
+        {#if repositories.length === 0}
             <div class="text-center py-4 text-muted-foreground">
                 No repositories found.
             </div>
         {:else}
             <div class="flex flex-col gap-2">
                 {#each repositories as repo}
-                    <!-- svelte-ignore a11y_click_events_have_key_events -->
-                    <!-- svelte-ignore a11y_no_static_element_interactions -->
-                    <div
-                        class="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 transition-colors cursor-pointer group"
+                    <button
+                        class="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 transition-colors cursor-pointer group text-left w-full"
+                        type="button"
                         onclick={() => navigateToRepo(repo.full_name)}
                     >
                         <div class="flex flex-col gap-1 overflow-hidden">
@@ -77,10 +56,8 @@
                                 >{repo.description || "No description"}</span
                             >
                         </div>
-                        <Button variant="accent" size="sm" class=""
-                            >Manage</Button
-                        >
-                    </div>
+                        <Button variant="default" size="sm">Manage</Button>
+                    </button>
                 {/each}
             </div>
         {/if}

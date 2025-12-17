@@ -6,6 +6,8 @@
     import { Label } from "$lib/components/ui/label";
     import { Separator } from "$lib/components/ui/separator";
 
+    import ArrowLeft from "lucide-svelte/icons/arrow-left";
+
     const user = $derived(userState.current);
 </script>
 
@@ -57,9 +59,11 @@
                 </div>
             </Card.Content>
             <Card.Footer class="justify-between">
-                <Button variant="outline" href="#/dashboard"
-                    >Back to Dashboard</Button
-                >
+                <Button variant="secondary" href="/">
+                    <ArrowLeft class="size-4" />
+                    Back to Dashboard
+                </Button>
+
                 <Button variant="destructive" href="/logout/{user.Provider}"
                     >Logout</Button
                 >

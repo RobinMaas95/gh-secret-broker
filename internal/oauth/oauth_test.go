@@ -126,8 +126,8 @@ func TestProviderLogin_UserLoggedIn(t *testing.T) {
 	if w.Code != http.StatusTemporaryRedirect {
 		t.Errorf("Expected redirect (307), got %d", w.Code)
 	}
-	if loc := w.Header().Get("Location"); loc != "/#/dashboard" {
-		t.Errorf("Expected redirect to /#/dashboard, got %s", loc)
+	if loc := w.Header().Get("Location"); loc != "/" {
+		t.Errorf("Expected redirect to /, got %s", loc)
 	}
 }
 
@@ -160,8 +160,8 @@ func TestProviderLogout(t *testing.T) {
 	if w.Code != http.StatusTemporaryRedirect {
 		t.Errorf("Expected redirect (307), got %d", w.Code)
 	}
-	if loc := w.Header().Get("Location"); loc != "/" {
-		t.Errorf("Expected redirect to /, got %s", loc)
+	if loc := w.Header().Get("Location"); loc != "/login" {
+		t.Errorf("Expected redirect to /login, got %s", loc)
 	}
 
 	// Verify user is removed from session

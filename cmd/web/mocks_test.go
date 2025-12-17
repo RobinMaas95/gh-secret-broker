@@ -11,6 +11,7 @@ type mockRepositoryService struct {
 	ListMaintainableRepositoriesFunc func(ctx context.Context, client *github.Client, orgName string) ([]*github.Repository, error)
 	ListSecretsFunc                  func(ctx context.Context, client *github.Client, owner, repo string) ([]string, error)
 	DeleteSecretFunc                 func(ctx context.Context, client *github.Client, owner, repo, name string) error
+	CreateOrUpdateSecretFunc         func(ctx context.Context, client *github.Client, owner, repo, name, value string) error
 	HasMaintainerAccessFunc          func(ctx context.Context, client *github.Client, owner, repo string) (bool, error)
 }
 
@@ -32,6 +33,13 @@ func (m *mockRepositoryService) ListSecrets(ctx context.Context, client *github.
 func (m *mockRepositoryService) DeleteSecret(ctx context.Context, client *github.Client, owner, repo, name string) error {
 	if m.DeleteSecretFunc != nil {
 		return m.DeleteSecretFunc(ctx, client, owner, repo, name)
+	}
+	return nil
+}
+
+func (m *mockRepositoryService) CreateOrUpdateSecret(ctx context.Context, client *github.Client, owner, repo, name, value string) error {
+	if m.CreateOrUpdateSecretFunc != nil {
+		return m.CreateOrUpdateSecretFunc(ctx, client, owner, repo, name, value)
 	}
 	return nil
 }

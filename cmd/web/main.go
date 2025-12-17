@@ -93,7 +93,20 @@ func main() {
 		&oauth2.Token{AccessToken: cfg.GithubPAT},
 	)
 	tc := oauth2.NewClient(context.Background(), ts)
-	patClient := github.NewClient(tc)
+	var patClient *github.Client
+
+	if cfg.GithubEnterpriseURL != "" {
+		baseURL := cfg.GithubEnterpriseURL + "/api/v3/"
+		uploadURL := cfg.GithubEnterpriseURL + "/api/v3/upload/"
+		var err error
+		patClient, err = github.NewClient(tc).WithEnterpriseURLs(baseURL, uploadURL)
+		if err != nil {
+			logger.Error("Failed to create enterprise client", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	} else {
+		patClient = github.NewClient(tc)
+	}
 
 	app := &application{
 		logger:       logger,

@@ -9,12 +9,14 @@
     class="flex h-14 items-center gap-4 border-b bg-muted/40 px-6 lg:h-[60px]"
 >
     <div class="flex-1">
-        <h1 class="font-semibold text-lg">GH Secret Broker</h1>
+        <a href="/" class="hover:opacity-80 transition-opacity">
+            <h1 class="font-semibold text-lg">GH Secret Broker</h1>
+        </a>
     </div>
     <div class="flex items-center gap-4">
         <ModeToggle />
         {#if userState.current}
-            <a href="#/profile">
+            <a href="/profile">
                 <Avatar.Root
                     class="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity"
                 >

@@ -2,5 +2,5 @@ package ui
 
 import "embed"
 
-//go:embed dist/*
+//go:embed all:build
 var Files embed.FS
