@@ -2,8 +2,11 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [sveltekit(), tailwindcss()],
+  resolve: {
+    conditions: mode === 'test' ? ['browser'] : undefined,
+  },
   server: {
     proxy: {
       '/api': {
@@ -30,4 +33,4 @@ export default defineConfig({
     environment: 'jsdom',
     restoreMocks: true
   }
-});
+}));
