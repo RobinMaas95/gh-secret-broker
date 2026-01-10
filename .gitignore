@@ -47,3 +47,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-debug.log*
+.svelte-kit/
+package
+server.log
++/web

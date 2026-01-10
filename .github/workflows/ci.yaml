@@ -41,13 +41,23 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: ui/pnpm-lock.yaml
 
+      - name: Install dependencies (ui)
+        working-directory: ui
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Svelte (check)
+        working-directory: ui
+        run: pnpm run check
+
+      - name: Run Tests (ui)
+        working-directory: ui
+        run: pnpm run test
+
       - name: Build Frontend
+        working-directory: ui
         run: |
-          cd ui
-          pnpm install --frozen-lockfile
-          pnpm run test
           pnpm run build
-          ls -R dist
+          ls -R build
 
       - name: Check formatting (gofmt)
         run: |

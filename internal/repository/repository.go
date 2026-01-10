@@ -2,9 +2,13 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"strings"
 
 	"github.com/google/go-github/v80/github"
+	"golang.org/x/crypto/nacl/box"
 )
 
 // RepositoryService defines the interface for repository operations.
@@ -13,6 +17,7 @@ type RepositoryService interface {
 	ListMaintainableRepositories(ctx context.Context, client *github.Client, orgName string) ([]*github.Repository, error)
 	ListSecrets(ctx context.Context, client *github.Client, owner, repo string) ([]string, error)
 	DeleteSecret(ctx context.Context, client *github.Client, owner, repo, name string) error
+	CreateOrUpdateSecret(ctx context.Context, client *github.Client, owner, repo, name, value string) error
 	HasMaintainerAccess(ctx context.Context, client *github.Client, owner, repo string) (bool, error)
 }
 
@@ -86,6 +91,60 @@ func (s *Service) ListSecrets(ctx context.Context, client *github.Client, owner,
 func (s *Service) DeleteSecret(ctx context.Context, client *github.Client, owner, repo, name string) error {
 	_, err := client.Actions.DeleteRepoSecret(ctx, owner, repo, name)
 	return err
+}
+
+// CreateOrUpdateSecret encrypts and uploads a secret to a repository.
+func (s *Service) CreateOrUpdateSecret(ctx context.Context, client *github.Client, owner, repo, name, value string) error {
+	// 1. Get Public Key from GitHub
+	publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, owner, repo)
+	if err != nil {
+		return err
+	}
+
+	// 2. Encrypt the secret
+	encryptedValue, err := encryptSecretWithPublicKey(publicKey, name, value)
+	if err != nil {
+		return err
+	}
+
+	// 3. Create or Update Secret
+	secret := &github.EncryptedSecret{
+		Name:           name,
+		KeyID:          publicKey.GetKeyID(),
+		EncryptedValue: encryptedValue,
+	}
+
+	_, err = client.Actions.CreateOrUpdateRepoSecret(ctx, owner, repo, secret)
+	return err
+}
+
+// encryptSecretWithPublicKey encrypts a secret value using the repository's public key (NaCl Box).
+// Note: This logic mimics the standard GitHub Actions encryption process.
+func encryptSecretWithPublicKey(publicKey *github.PublicKey, secretName, secretValue string) (string, error) {
+	if publicKey == nil || publicKey.Key == nil {
+		return "", fmt.Errorf("public key is missing")
+	}
+
+	// Decode the base64 public key
+	decodedKey, err := base64.StdEncoding.DecodeString(*publicKey.Key)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode public key: %w", err)
+	}
+
+	// Convert fixed size key
+	var recipientKey [32]byte
+	copy(recipientKey[:], decodedKey)
+
+	// Encrypt using NaCl Box (Sealed Box)
+	// GitHub uses libsodium's crypto_box_seal.
+	// In Go's x/crypto/nacl/box, we use box.SealAnonymous
+	encryptedBytes, err := box.SealAnonymous(nil, []byte(secretValue), &recipientKey, rand.Reader)
+	if err != nil {
+		return "", fmt.Errorf("failed to encrypt secret: %w", err)
+	}
+
+	// Encode result to base64
+	return base64.StdEncoding.EncodeToString(encryptedBytes), nil
 }
 
 // HasMaintainerAccess checks if the user has 'admin' or 'maintain' permissions on the repository.

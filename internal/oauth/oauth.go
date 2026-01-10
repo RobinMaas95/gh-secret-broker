@@ -44,6 +44,13 @@ func NewService(logger *slog.Logger, cfg *config.Config) *Service {
 		return req.PathValue("provider"), nil
 	}
 
+	if cfg.GithubEnterpriseURL != "" {
+		github.AuthURL = cfg.GithubEnterpriseURL + "/login/oauth/authorize"
+		github.TokenURL = cfg.GithubEnterpriseURL + "/login/oauth/access_token"
+		github.ProfileURL = cfg.GithubEnterpriseURL + "/api/v3/user"
+		github.EmailURL = cfg.GithubEnterpriseURL + "/api/v3/user/emails"
+	}
+
 	goth.UseProviders(
 		github.New(cfg.GithubClientID, cfg.GithubClientSecret, cfg.BaseURL+"/auth/github/callback", "user:email"),
 	)
@@ -79,14 +86,14 @@ func (s *Service) ProviderLogin(res http.ResponseWriter, req *http.Request) {
 	if session != nil {
 		if _, ok := session.Values["user"]; ok {
 			// User is already logged in, redirect to user page
-			http.Redirect(res, req, "/#/dashboard", http.StatusTemporaryRedirect)
+			http.Redirect(res, req, "/", http.StatusTemporaryRedirect)
 			return
 		}
 	}
 
 	// Fallback to gothic check (optional, but good for consistency if mixed)
 	if _, err := gothic.CompleteUserAuth(res, req); err == nil {
-		http.Redirect(res, req, "/#/userpage", http.StatusTemporaryRedirect)
+		http.Redirect(res, req, "/", http.StatusTemporaryRedirect)
 	} else {
 		gothic.BeginAuthHandler(res, req)
 	}
@@ -109,7 +116,8 @@ func (s *Service) ProviderLogout(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	res.Header().Set("Location", "/")
+	res.Header().Set("Location", "/login")
+	res.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
@@ -138,7 +146,7 @@ func (s *Service) HandleCallback(res http.ResponseWriter, req *http.Request) {
 	}
 
 	// Redirect to the user page after successful login
-	http.Redirect(res, req, "/#/dashboard", http.StatusTemporaryRedirect)
+	http.Redirect(res, req, "/", http.StatusTemporaryRedirect)
 }
 
 /*
